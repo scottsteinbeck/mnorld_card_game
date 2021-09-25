@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style>
+        .cardBlock{
+            border:1px dashed rgb(160, 160, 160);
+            width:80px;
+            float:left;
+        }        
+        .cardBlockChallenge{
+            border-top:1px dashed rgb(160, 160, 160);
+            padding-bottom: 17px;
+        }
+        .matched {
+            background-color:greenyellow;
+        }
+        .miniCardIcon {
+            height: 25px;
+            font-size: 6px;
+            border: 1px solid #00000024;
+            width: 15px;
+            float: left;
+            margin: 5px 5px -17px 5px;
+            padding: 5px;
+            text-align: center;
+            border-radius: 5px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .cardIcon {
+            height: 53px;
+            border: 1px solid #00000024;
+            width: 44px;
+            margin: 5px;
+            padding: 5px;
+            text-align: center;
+            border-radius: 5px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .chosen {
+            border: 2px dashed black;
+        }
+        .clickable{
+            cursor: pointer
+        }
+        .card0 { background: #94048d; color: #fff; }
+        .card1 { background: #2f4f4f; color: #fff; }
+        .card2 { background: #6b8e23 }
+        .card3 { background: #a0522d ; color: #fff;}
+        .card4 { background: #4b0082 ; color: #fff;}
+        .card5 { background: #00ced1 }
+        .card6 { background: #ffa500 }
+        .card7 { background: #ffff00 }
+        .card8 { background: #00fa9a }
+        .card9 { background: #0000ff ; color: #fff;}
+        .card10 { background: #ff00ff }
+        .card11 { background: #dda0dd }
+        .card12 { background: #ff1493 }
+        
+        .root { background: #00ff00 }
+        .errorCard { background: #ff0000 }
+        .overClockCard { background: #ffe4c4}
+        .extraByteCard { background: #04fcc6}
+        
+    </style>
+</head>
+<body>
+<div id="cardsTable" >
+    <h2 v-if="gameWon">Player {{playerID}} Wins!</h2>
+    <button  v-if="gameWon" type="button" @click="createNewGame()">Start New Game</button>
+    
+    <button  v-if="!gameWon" type="button" @click="randomPlay()">Play</button>
+    <table width="100%">
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Deck</th>
+                <th>Hand</th>
+            </tr>
+        </thead>
+        <tr v-for="(player, playerIdx) in players">
+            <td>
+
+                Player {{playerIdx}}
+                <div v-if="playerID == playerIdx"><strong>My Turn</strong></div>
+            </td>
+            <td>
+                <div  v-for="(card,index) in player.deck" class="cardBlock" :class="{'matched': card.matched}">
+                    <template v-if="playerID == playerIdx">
+                        <div class="cardIcon" :class="card.card" >
+                            {{card.card |  CamelToSpace}}
+                        </div>
+                    </template>
+                    <template v-if="playerID != playerIdx">
+                        <div class="cardIcon clickable" :class="card.card" @click="processIndexTurn(playerCardIndex,index)">
+                            {{card.card |  CamelToSpace}}
+                        </div>
+                    </template>
+                    <div class="cardBlockChallenge">
+                        
+                        <div class="miniCardIcon"  :class="chalcard" v-for="chalcard in card.challenges" >
+                            {{chalcard | CamelToSpace}}
+                        </div>
+                    </div>
+                </div>
+
+            </td>
+            <td>
+                <template v-if="playerID == playerIdx">
+                    <div class="cardBlock cardIcon clickable" @click="playerCardIndex = index" :class="[card, playerCardIndex == index ? 'chosen':'']" v-for="(card,index) in player.hand">{{card |  CamelToSpace}}</div>
+                </template>
+                <template v-if="playerID != playerIdx">
+                        <div class="cardBlock cardIcon" :class="[card]" v-for="(card,index) in player.hand">{{card |  CamelToSpace}}</div>
+
+                </template>
+            </td>
+            
+        </tr>
+        
+    </table>
+
+    <h2>Shuffled Deck</h2>
+    <div class="cardBlock cardIcon" :class="card" v-for="card in shuffledDeck">{{card |  CamelToSpace}}</div>
+</div>
+
+
+<script>
+    var cardDeck = [];
+    var maxCardNum = 12;
+    var cardCount = 8;
+    for(var i=0; i<=maxCardNum; i++){
+        for(var t=0; t<cardCount; t++){
+            cardDeck.push('card' + i);
+        }
+    }
+    // var cardDeck = [
+    //     'card0','card0','card0','card0','card0','card0','card0','card0',
+    //     'card1','card1','card1','card1','card1','card1','card1','card1',
+    //     'card2','card2','card2','card2','card2','card2','card2','card2',
+    //     'card3','card3','card3','card3','card3','card3','card3','card3',
+    //     'card4','card4','card4','card4','card4','card4','card4','card4',
+    //     'card5','card5','card5','card5','card5','card5','card5','card5',
+    //     'card6','card6','card6','card6','card6','card6','card6','card6',
+    //     'card7','card7','card7','card7','card7','card7','card7','card7',
+    //     'card8','card8','card8','card8','card8','card8','card8','card8',
+    //     'card9','card9','card9','card9','card9','card9','card9','card9',
+    //     'card10','card10','card10','card10','card10','card10','card10','card10',
+    //     'card11','card11','card11','card11','card11','card11','card11','card11',
+    //     'card12','card12','card12','card12','card12','card12','card12','card12',
+    // ];
+
+    Vue.filter('CamelToSpace',function (data){
+        return data.replace(/([A-Z]|[0-9]+)/g, ' $1')
+        // uppercase the first character
+        .replace(/^./, function(str){ return str.toUpperCase(); })
+    })
+
+    var cardVue = new Vue({
+        el:'#cardsTable',
+        mounted: function(){
+            this.createNewGame();
+        },
+        data: {
+            shuffledDeck: [],
+            players: [
+                { deck:[], hand:[] },
+                { deck:[], hand:[] },
+            ],
+            playerID: 1,
+            opponentID: 0,
+            gameWon: false,
+            extraByteCard: '',
+            playerCardIndex: -1,
+            opponentCardIndex: -1
+        },
+        methods:{
+            computerPlay: function (){
+
+                var playerHand = this.players[this.playerID].hand;
+                var opponentDeck = this.players[this.opponentID].deck;
+                  var opponentChallengeCards = opponentDeck.reduce(function(acc,x,i){
+                        if(!x.matched) acc.push(i);
+                        return acc;
+                    },[]);
+
+                    var lowerBound= 0;
+                    var upperBound= 12;
+                    var unmatchedIndex= this.pickRandomOpponentCard(opponentChallengeCards);
+
+                    //search for lower bound
+                    for(var i = unmatchedIndex-1; i >= 0 ; i--){
+                        if(opponentDeck[i].matched){
+                            lowerBound = parseInt(opponentDeck[i].card.replace('card',''));
+                            break;
+                        }
+                    }
+
+                    //search for upper bound
+                    for(var i = unmatchedIndex+1; i < opponentDeck.length ; i++){
+                        if(opponentDeck[i].matched){
+                            upperBound = parseInt(opponentDeck[i].card.replace('card',''));
+                            break;
+                        }
+                    }
+                    
+                    var opponentDeckCard = opponentDeck[unmatchedIndex];
+                    var playerCard = this.pickRandomPlayerCard(playerHand,opponentDeckCard,lowerBound,upperBound);
+                    this.processTurn(playerCard, opponentDeckCard);
+            },
+
+
+            processIndexTurn: function (playerCardIndex, opponentDeckCardIndex){
+
+                var playerHand = this.players[this.playerID].hand;
+                var opponentDeck = this.players[this.opponentID].deck;
+                //console.log(playerHand.splice(playerCardIndex,1),opponentDeck[opponentDeckCardIndex]);
+                this.processTurn(playerHand.splice(playerCardIndex,1)[0], opponentDeck[opponentDeckCardIndex]);
+                this.playerCardIndex = -1;
+                this.opponentCardIndex = -1;
+            },
+            processTurn: function (playerCard, opponentDeckCard){
+                
+
+                //Pick card from players deck and challenge an opponents card
+                var playerHand = this.players[this.playerID].hand;
+                var opponentDeck = this.players[this.opponentID].deck;
+                
+                var errorCardIdx = playerHand.indexOf('errorCard');
+                if(errorCardIdx == -1){ //Error card is not present
+                
+
+                    //Add to challenges for the picked card
+                    opponentDeckCard.challenges.push(playerCard);
+                    
+                    // check if match or a root card
+                    if(
+                        opponentDeckCard.card == playerCard 
+                        || playerCard == 'root' 
+                    ) opponentDeckCard.matched = true;
+
+                    var opponentChallengeCards = opponentDeck.filter(function(x){ return !x.matched});
+                    // if we matched the last card then finish the game
+                    if(!opponentChallengeCards.length){
+                        this.gameWon = true;
+                        return;
+                    }
+                } else {
+                    // remove the error card
+                    playerHand.splice(errorCardIdx, 1);
+                }
+                //Otherwise replace the missing card from the players hand and give the other play a turn
+                this.addCardFromShuffle();
+                if(!this.shuffledDeck.length) return;
+
+                return;
+            },
+            addCardFromShuffle: function(){
+                var playerHand = this.players[this.playerID].hand;
+                if(this.shuffledDeck.length) {
+                    var newCard = this.shuffledDeck.shift();
+
+                    // Extra byte card adds a card to the players deck 
+                    // and draws a new card for the hand
+                    if(newCard == 'extraByteCard'){
+                        this.players[this.playerID].deck.push({
+                            card: this.extraByteCard,
+                            challenges:[],
+                            matched: false
+                        })
+                        this.players[this.playerID].deck.sort(function(a,b){ return parseInt(a.card.replace('card','')) - parseInt(b.card.replace('card','')); });
+
+                        newCard = this.shuffledDeck.shift();
+                    } 
+
+                    if(newCard == 'overClockCard'){
+                        newCard = this.shuffledDeck.shift();
+                        playerHand.push(newCard);
+                        console.log('overClockCard')
+                    } else {
+                        playerHand.push(newCard);
+                        this.switchPlayer();
+                    }
+
+                } else {
+                    this.gameWon = true;
+                    return;
+                }
+            },
+            pickRandomOpponentCard: function(opponentChallengeCards){
+                var randomDeckCardIdx = Math.floor(Math.random() * opponentChallengeCards.length);
+                return opponentChallengeCards[randomDeckCardIdx];
+
+            },
+            pickRandomPlayerCard: function(playerHand,opponentDeckCard,low,high){
+
+                var playerOptions = playerHand.filter(function(a){
+                    var cardNumber = parseInt(a.replace('card',''));
+                    return cardNumber >= low && cardNumber <= high && opponentDeckCard.challenges.indexOf(a) == -1;
+                });
+                if(playerHand.indexOf('root') > -1){
+                    var cardIndex = playerHand.indexOf('root');
+                } else if(playerOptions.length){
+                    var randomHandCard = Math.floor(Math.random() * playerOptions.length);
+                    var cardIndex = playerHand.indexOf(playerOptions[randomHandCard]);
+                } else {
+                    var cardIndex = Math.floor(Math.random() * playerHand.length);
+                }
+                return playerHand.splice(cardIndex, 1)[0];
+                
+            },
+            switchPlayer: function(){
+                if(this.playerID == 0){
+                    this.playerID = 1; 
+                    this.opponentID = 0;
+                    setTimeout(this.computerPlay,40);
+                } else {
+                    this.playerID = 0; 
+                    this.opponentID = 1;
+                    setTimeout(this.computerPlay,40);
+                }
+            },
+            createNewGame: function (){
+                this.players = [
+                    { deck:[], hand:[] },
+                    { deck:[], hand:[] },
+                ];
+                this.playerID= 0;
+                this.opponentID= 1;
+                this.gameWon= false;            
+                
+                this.shuffledDeck = this.shuffle(cardDeck);
+
+                this.dealCards();
+                this.addSpecialCards();
+                
+            },
+            addSpecialCards: function (cardDeck){
+                var specialCards = [
+                    'root', 'root','root',
+                    //'root','root','root','root','root',
+                    'errorCard','errorCard','errorCard','errorCard','errorCard','errorCard','errorCard','errorCard',
+                    'overClockCard','overClockCard','overClockCard','overClockCard','overClockCard','overClockCard','overClockCard','overClockCard',
+                    'extraByteCard'
+                ];
+                for(var i = 0; i < specialCards.length; i++){
+                    this.shuffledDeck.push(specialCards[i]);
+                }
+                this.shuffledDeck = this.shuffle(this.shuffledDeck);
+            },
+            shuffle: function (cardDeck){
+                return cardDeck
+                        .map((value) => ({ value: value, sort: Math.random() }))
+                        .sort((a, b) => a.sort - b.sort)
+                        .map((x) => x.value)
+            },
+            dealCards: function(){
+                // dealing cards
+                var _self = this;
+                for(var i=0; i<_self.players.length; i++){
+                    for(var d=0; d<5; d++){
+                        _self.players[i].deck.push({
+                            card: _self.shuffledDeck.shift(),
+                            challenges:[],
+                            matched: false
+                        });
+                    }
+                    _self.players[i].deck.sort(function(a,b){ return parseInt(a.card.replace('card','')) - parseInt(b.card.replace('card','')); });
+                    for(var h=0; h<5; h++){
+                        _self.players[i].hand.push(_self.shuffledDeck.shift());
+                    }
+                }
+                this.extraByteCard = _self.shuffledDeck.shift()
+            }
+        }
+    })
+
+
+</script>
+    
+</body>
+</html>
