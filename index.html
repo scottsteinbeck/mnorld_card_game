@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Card Game</title>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="vue.js"></script>
     <style>
         .cardBlock{
             border:1px dashed rgb(160, 160, 160);
@@ -170,7 +170,7 @@
 
                 var playerHand = this.players[this.playerID].hand;
                 var opponentDeck = this.players[this.opponentID].deck;
-                  var opponentChallengeCards = opponentDeck.reduce(function(acc,x,i){
+                var opponentChallengeCards = opponentDeck.reduce(function(acc,x,i){
                         if(!x.matched) acc.push(i);
                         return acc;
                     },[]);
