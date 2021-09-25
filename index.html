@@ -11,6 +11,7 @@
             border:1px dashed rgb(160, 160, 160);
             width:80px;
             float:left;
+            padding-bottom: 22px;
         }        
         .cardBlockChallenge{
             border-top:1px dashed rgb(160, 160, 160);
@@ -236,12 +237,13 @@
                 } else {
                     console.log('Error Card Found');
                     // remove the error card
+                    if(playerHand.indexOf(playerCard) != errorCardIdx) playerHand.push(playerCard);
                     playerHand.splice(errorCardIdx, 1);
                 }
                 //Otherwise replace the missing card from the players hand and give the other play a turn
                 if(!this.shuffledDeck.length) return;
                 this.addCardFromShuffle();
-                
+
                 return;
             },
         
@@ -332,7 +334,7 @@
                 var specialCards = [
                     'root', 'root','root',
                     //'root','root','root','root','root',
-                    //'errorCard','errorCard','errorCard','errorCard','errorCard','errorCard','errorCard','errorCard',
+                    'errorCard','errorCard','errorCard','errorCard','errorCard','errorCard','errorCard','errorCard',
                     'overClockCard','overClockCard','overClockCard','overClockCard','overClockCard','overClockCard','overClockCard','overClockCard',
                     'extraByteCard'
                 ];
