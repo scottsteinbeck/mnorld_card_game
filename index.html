@@ -305,14 +305,14 @@
                 
             },
             switchPlayer: function(){
-                if(this.playerID == 0){
+                if(this.playerID == 0){ //Switch to Player 1
                     this.playerID = 1; 
                     this.opponentID = 0;
                     setTimeout(this.computerPlay,40);
-                } else {
+                } else { // Switch to player 0
                     this.playerID = 0; 
                     this.opponentID = 1;
-                    setTimeout(this.computerPlay,40);
+                    //setTimeout(this.computerPlay,40);
                 }
             },
             createNewGame: function (){
